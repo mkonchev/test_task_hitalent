@@ -1,5 +1,5 @@
+import os
 from pydantic_settings import BaseSettings
-from pydantic import ConfigDict
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -7,25 +7,30 @@ load_dotenv()
 
 class Settings(BaseSettings):
     DB_HOST: str = "localhost"
-    DB_PORT: str = "5435"
+    DB_PORT: str = "5436"
     DB_NAME: str = "test_db"
     DB_USER: str = "postgres"
     DB_PASSWORD: str = "1111"
 
-    model_config = ConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-    )
-
 
 settings = Settings()
 
+IN_DOCKER = os.path.exists('/.dockerenv')
+
 
 def get_db_url():
-    return (f"postgresql+asyncpg://{settings.DB_USER}:{settings.DB_PASSWORD}@"
-            f"{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}")
+    if IN_DOCKER:
+        return (f"postgresql+asyncpg://{settings.DB_USER}:{settings.DB_PASSWORD}@" # noqa
+                f"test-database:{settings.DB_PORT}/{settings.DB_NAME}")
+    else:
+        return (f"postgresql+asyncpg://{settings.DB_USER}:{settings.DB_PASSWORD}@" # noqa
+                f"{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}")
 
 
-def get_db_url_docker():
-    return (f"postgresql+asyncpg://{settings.DB_USER}:{settings.DB_PASSWORD}@"
-            f"localhost:{settings.DB_PORT}/{settings.DB_NAME}")
+def get_db_url_sync():
+    if IN_DOCKER:
+        return (f"postgresql://{settings.DB_USER}:{settings.DB_PASSWORD}@"
+                f"test-database:{settings.DB_PORT}/{settings.DB_NAME}")
+    else:
+        return (f"postgresql://{settings.DB_USER}:{settings.DB_PASSWORD}@"
+                f"{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}")

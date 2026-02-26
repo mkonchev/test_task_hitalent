@@ -9,7 +9,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: 1111
     ports:
-      - "5435:5432"
+      - "5436:5432"
     volumes:
       - test_db_data:/var/lib/postgresql/data
     networks:

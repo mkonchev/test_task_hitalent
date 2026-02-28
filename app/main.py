@@ -2,8 +2,12 @@ from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.database import get_db
+from app.api.endpoints import router as department_router
 
 app = FastAPI()
+
+
+app.include_router(department_router)
 
 
 @app.get('/')

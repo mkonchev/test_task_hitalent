@@ -27,7 +27,7 @@ def get_db_url():
                 f"{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}")
 
 
-def get_db_url_sync():
+def get_db_url_sync():  # not used
     if IN_DOCKER:
         return (f"postgresql://{settings.DB_USER}:{settings.DB_PASSWORD}@"
                 f"test-database:{settings.DB_PORT}/{settings.DB_NAME}")

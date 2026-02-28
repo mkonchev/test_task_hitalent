@@ -1,0 +1,53 @@
+import logging
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.db.database import get_db
+from app.schemas import department as schema_department
+from app.schemas import employee as schema_employee
+from app.services.department import DepartmentService
+from app.services.employee import EmployeeService
+from app.exceptions import exceptions
+
+
+router = APIRouter(prefix="/departments", tags=['Departments actions'])
+
+
+@router.post('/')
+async def create_department(
+    department: schema_department.DepartmentCreate,
+    db: AsyncSession = Depends(get_db)
+):
+    service = DepartmentService(db)
+    try:
+        return await service.create_department(department)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Exeption: {e}")
+
+
+@router.post(
+        '/{id}/employees',
+        response_model=schema_employee.EmployeeResponse,
+        status_code=status.HTTP_201_CREATED)
+async def create_employee(
+    id: int,
+    employee: schema_employee.EmployeeCreate,
+    db: AsyncSession = Depends(get_db)
+):
+    service = EmployeeService(db)
+    try:
+        employee = await (
+            service.create_employee(employee, department_id=id)
+        )
+        return employee
+    except exceptions.DepartmentNotFoundError as e:
+        logging.warning(f"No department with this department_id: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=e.message
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Exeption: {e}")

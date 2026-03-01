@@ -22,7 +22,7 @@ class DepartmentService:
             raise ValueError("Zero department name length")
 
         if len(department.name) > 200:
-            raise ValueError("Department name must be less than 200 characters")
+            raise ValueError("Department name must be less than 200 chars")
 
         if department.parent_id is not None:
             parent = await (

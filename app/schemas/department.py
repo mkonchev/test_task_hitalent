@@ -17,20 +17,18 @@ class DepartmentResponse(BaseModel):
     id: int
     name: str
     created_at: datetime
-    updated_at: datetime | None
 
     model_config = ConfigDict(from_attributes=True)
 
 
-class DepartmentDetailResponce(BaseModel):
+class DepartmentDetailResponse(BaseModel):
     id: int
     name: str
     created_at: datetime
-    updated_at: datetime | None
     employees: list[EmployeeResponse] = []
-    children: list['DepartmentDetailResponce'] = []
+    children: list['DepartmentDetailResponse'] = []
 
     model_config = ConfigDict(from_attributes=True)
 
 
-DepartmentDetailResponce.model_rebuild()
+DepartmentDetailResponse.model_rebuild()

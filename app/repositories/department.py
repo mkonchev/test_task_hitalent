@@ -1,7 +1,9 @@
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from sqlalchemy import select
 from app.schemas import department as schemas
 from app.models.department import Department
+from app.models.employee import Employee
 
 
 class DepartmentRepository:
@@ -10,7 +12,7 @@ class DepartmentRepository:
 
     async def create_department(
         self,
-        department: schemas.DepartmnetCreate
+        department: schemas.DepartmentCreate
     ) -> Department | None:
         db_department = Department(
             name=department.name,
@@ -44,4 +46,39 @@ class DepartmentRepository:
             query = query.where(Department.parent_id.is_(None))
 
         result = await self.db.execute(query)
+        return result.scalars().all()
+
+    async def get_department_with_employees(
+        self,
+        id: int
+    ) -> Department | None:
+        result = await self.db.execute(
+            select(Department)
+            .where(Department.id == id)
+            .options(selectinload(Department.employees))
+        )
+        return result.scalar_one_or_none()
+
+    async def get_department_detail(
+        self,
+        id: int,
+        include_employees: bool = True
+    ) -> Department | None:
+        query = select(Department).where(Department.id == id)
+
+        if include_employees:
+            query = query.options(
+                selectinload(Department.employees)
+                .selectin(Employee).order_by(Employee.full_name)
+            )
+
+        result = await self.db.execute(query)
+        return result.scalar_one_or_none()
+
+    async def get_child_departments(self, parent_id: int) -> list[Department]:
+        result = await self.db.execute(
+            select(Department)
+            .where(Department.parent_id == parent_id)
+            .order_by(Department.name)
+        )
         return result.scalars().all()

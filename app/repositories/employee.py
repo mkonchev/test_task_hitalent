@@ -42,3 +42,14 @@ class EmployeeRepository:
             )
         )
         return result.scalar_one_or_none()
+
+    async def get_employees_by_department(
+        self,
+        department_id: int
+    ) -> list[Employee]:
+        result = await self.db.execute(
+            select(Employee)
+            .where(Employee.department_id == department_id)
+            .order_by(Employee.full_name)
+        )
+        return result.scalars().all()

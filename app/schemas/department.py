@@ -1,5 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
+from enum import Enum
 from app.schemas.employee import EmployeeResponse
 
 
@@ -18,6 +19,18 @@ class DepartmentUpdate(BaseModel):
     parent_id: int | None = None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class DeleteMode(str, Enum):
+    CASCADE = "cascade"
+    REASSIGN = "reassign"
+
+
+class DepartmentDeleteQuery(BaseModel):
+    mode: DeleteMode
+    reassign_to_department_id: int | None = None
+
+    model_config = ConfigDict(extra="forbid")
 
 
 class DepartmentResponse(BaseModel):

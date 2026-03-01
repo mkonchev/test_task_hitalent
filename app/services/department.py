@@ -2,6 +2,7 @@ import logging
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.schemas import department as schemas_department
 from app.schemas import employee as schemas_employee
+from app.schemas.department import DeleteMode
 from app.repositories.department import DepartmentRepository
 from app.exceptions import exceptions
 from app.repositories.employee import EmployeeRepository
@@ -19,6 +20,10 @@ class DepartmentService:
 
         if department.name == "":
             raise ValueError("Zero department name length")
+
+        if len(department.name) > 200:
+            raise ValueError("Department name must be less than 200 characters")
+
         if department.parent_id is not None:
             parent = await (
                 self.repository.get_department_by_id(department.parent_id)
@@ -239,4 +244,88 @@ class DepartmentService:
             return updated_department
         except Exception as e:
             logging.error(f"Failed to update department {department_id}: {e}")
+            raise
+
+    async def _delete_subtree(self, department_id: int):
+        children = await self.repository.get_child_departments(department_id)
+
+        for child in children:
+            await self._delete_subtree(child.id)
+
+        await self.repository.delete_departmnet_cascade(department_id)
+
+    async def delete_department(
+        self,
+        department_id: int,
+        mode: DeleteMode,
+        reassign_to_department_id: int | None = None
+    ):
+        department = await (
+            self.repository.get_department_by_id(department_id)
+        )
+        if not department:
+            raise exceptions.DepartmentNotFoundError(department_id)
+
+        if mode == DeleteMode.REASSIGN:
+            if reassign_to_department_id is None:
+                raise ValueError(
+                    "reassign_to_department_id is "
+                    "required with REASSIGN mode"
+                )
+
+            if reassign_to_department_id == department_id:
+                raise ValueError("Can't to reassing to same department")
+
+            target_department = await (
+                self.repository.get_department_by_id(reassign_to_department_id)
+            )
+            if not target_department:
+                raise exceptions.DepartmentNotFoundError(
+                    reassign_to_department_id
+                )
+
+            if await (
+                self._check_for_cycles(
+                    department_id,
+                    reassign_to_department_id
+                )
+            ):
+                raise exceptions.DepartmentCycleError(
+                    f"{department_id} under the "
+                    "{reassign_to_department_id} create a cycle"
+                )
+
+        try:
+            if mode == DeleteMode.CASCADE:
+                await (
+                    self._delete_subtree(department_id)
+                )
+                logging.info(
+                    f"Department {department_id} deleted CASCADE mode"
+                )
+
+            else:
+                await (
+                    self.repository.reassing_child_departments(
+                        department_id,
+                        reassign_to_department_id
+                    )
+                )
+
+                await (
+                    self.repository.reassign_employees_to_department(
+                        department_id,
+                        reassign_to_department_id
+                    )
+                )
+
+                await self.repository.delete_departmnet_cascade(department_id)
+
+                logging.info(
+                    f"Department {department_id} deleted with REASSIGN mode. "
+                    f"Employees and children in {reassign_to_department_id}"
+                )
+
+        except Exception as e:
+            logging.error(f"Failed to delete department {department_id}: {e}")
             raise

@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.database import get_db
 from app.schemas import department as schema_department
 from app.schemas import employee as schema_employee
+from app.schemas.department import DeleteMode
 from app.services.department import DepartmentService
 from app.services.employee import EmployeeService
 from app.exceptions import exceptions
@@ -101,6 +102,45 @@ async def update_department(
             update_data
         )
         return updated_department
+    except exceptions.DepartmentNotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+    except exceptions.DepartmentCycleError as e:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(e)
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+
+
+@router.delete(
+    "/{department_id}",
+    status_code=status.HTTP_204_NO_CONTENT
+)
+async def delete_department(
+    department_id: int,
+    mode: DeleteMode = Query(..., description=" cascade | reassign"),
+    reassign_to_department_id: int | None = None,
+    db: AsyncSession = Depends(get_db)
+):
+    service = DepartmentService(db)
+
+    try:
+        await (
+            service.delete_department(
+                department_id=department_id,
+                mode=mode,
+                reassign_to_department_id=reassign_to_department_id
+            )
+        )
+        return None
+
     except exceptions.DepartmentNotFoundError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

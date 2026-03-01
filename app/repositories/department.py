@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from sqlalchemy import select, update
+from sqlalchemy import select, update, delete
 from app.schemas import department as schemas
 from app.models.department import Department
 from app.models.employee import Employee
@@ -96,3 +96,43 @@ class DepartmentRepository:
         await self.db.commit()
 
         return await self.get_department_by_id(departmnet_id)
+
+    async def delete_departmnet_cascade(
+            self,
+            department_id: int
+    ) -> None:
+        await (
+            self.db.execute(
+                delete(Department)
+                .where(Department.id == department_id)
+            )
+        )
+        await self.db.commit()
+
+    async def reassign_employees_to_department(
+        self,
+        from_department_id: int,
+        to_department_id: int
+    ) -> None:
+        await (
+            self.db.execute(
+                update(Employee)
+                .where(Employee.department_id == from_department_id)
+                .values(department_id=to_department_id)
+            )
+        )
+        await self.db.commit()
+
+    async def reassing_child_departments(
+        self,
+        from_parent_id: int,
+        to_parent_id: int
+    ) -> None:
+        await (
+            self.db.execute(
+                update(Department)
+                .where(Department.parent_id == from_parent_id)
+                .values(parent_id=to_parent_id)
+            )
+        )
+        await self.db.commit()

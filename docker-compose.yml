@@ -19,6 +19,9 @@ services:
     depends_on:
       - test-database
     env_file: ./.env
+    environment:
+      DB_HOST: test-database
+      DB_PORT: 5432
     networks:
       - task-network
     command: alembic upgrade head
@@ -32,6 +35,9 @@ services:
     depends_on:
       - test-database
     env_file: ./.env
+    environment:
+      DB_HOST: test-database
+      DB_PORT: 5432
     networks:
       - task-network
 

@@ -19,9 +19,5 @@ IN_DOCKER = os.path.exists('/.dockerenv')
 
 
 def get_db_url():
-    if IN_DOCKER:
-        return (f"postgresql+asyncpg://{settings.DB_USER}:{settings.DB_PASSWORD}@" # noqa
-                f"test-database:5432/{settings.DB_NAME}")
-    else:
-        return (f"postgresql+asyncpg://{settings.DB_USER}:{settings.DB_PASSWORD}@" # noqa
-                f"{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}")
+    return (f"postgresql+asyncpg://{settings.DB_USER}:{settings.DB_PASSWORD}@"
+            f"{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}")

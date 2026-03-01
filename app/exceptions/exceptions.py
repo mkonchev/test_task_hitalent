@@ -12,3 +12,10 @@ class EmployeeNotFoundError(Exception):
         self.employee_id = employee_id
         self.message = f"Employee with id {employee_id} not found"
         super().__init__(self.message)
+
+
+class DepartmentCycleError(Exception):
+    """Обнаружен цикл в дереве подразделений"""
+    def __init__(self, message: str):
+        self.message = message
+        super().__init__(message)

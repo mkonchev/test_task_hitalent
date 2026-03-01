@@ -13,6 +13,13 @@ class DepartmentCreate(BaseModel):
     parent_id: int | None = None
 
 
+class DepartmentUpdate(BaseModel):
+    name: str | None = None
+    parent_id: int | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class DepartmentResponse(BaseModel):
     id: int
     name: str

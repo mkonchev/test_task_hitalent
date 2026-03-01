@@ -82,3 +82,37 @@ async def get_department(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e)
         )
+
+
+@router.patch(
+    "/{department_id}",
+    response_model=schema_department.DepartmentResponse,
+    status_code=status.HTTP_200_OK
+)
+async def update_department(
+    department_id: int,
+    update_data: schema_department.DepartmentUpdate,
+    db: AsyncSession = Depends(get_db)
+):
+    service = DepartmentService(db)
+    try:
+        updated_department = await service.update_department(
+            department_id,
+            update_data
+        )
+        return updated_department
+    except exceptions.DepartmentNotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+    except exceptions.DepartmentCycleError as e:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(e)
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )

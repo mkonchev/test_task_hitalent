@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from sqlalchemy import select
+from sqlalchemy import select, update
 from app.schemas import department as schemas
 from app.models.department import Department
 from app.models.employee import Employee
@@ -82,3 +82,17 @@ class DepartmentRepository:
             .order_by(Department.name)
         )
         return result.scalars().all()
+
+    async def update_department(
+        self,
+        departmnet_id: int,
+        update_data: dict
+    ) -> Department | None:
+        await self.db.execute(
+            update(Department)
+            .where(Department.id == departmnet_id)
+            .values(**update_data)
+        )
+        await self.db.commit()
+
+        return await self.get_department_by_id(departmnet_id)

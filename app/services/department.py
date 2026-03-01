@@ -146,3 +146,97 @@ class DepartmentService:
             result.append(child_data)
 
         return result
+
+    async def _check_for_cycles(
+        self,
+        department_id: int,
+        new_parent_id: int | None
+    ) -> bool:
+        if new_parent_id is None:
+            return False
+
+        current_parent_id = new_parent_id
+        visited = {department_id}
+
+        while current_parent_id is not None:
+            if current_parent_id in visited:
+                return True
+
+            visited.add(current_parent_id)
+
+            parent_dept = await (
+                self.repository.get_department_by_id(current_parent_id)
+            )
+            if parent_dept is None:
+                break
+
+            current_parent_id = parent_dept.parent_id
+
+        return False
+
+    async def update_department(
+        self,
+        department_id: int,
+        update_data: schemas_department.DepartmentUpdate
+    ):
+        existing_department = await (
+            self.repository.get_department_by_id(department_id)
+        )
+        if not existing_department:
+            raise exceptions.DepartmentNotFoundError(department_id)
+
+        update_values = {}
+
+        if update_data.name is not None:
+            if update_data.name == "":
+                raise ValueError("Department name cannot be empty")
+            update_values["name"] = update_data.name
+
+        if update_data.parent_id is not None:
+            if update_data.parent_id == department_id:
+                raise ValueError("Department cannot be its own parent")
+
+            if update_data.parent_id is not None:
+                parent = await (
+                    self.repository.get_department_by_id(update_data.parent_id)
+                )
+                if not parent:
+                    raise ValueError(f"Parent department with id {update_data.parent_id} not found") # noqa
+
+            if await (
+                self._check_for_cycles(department_id, update_data.parent_id)
+            ):
+                raise exceptions.DepartmentCycleError(
+                    f"Moving department {department_id} under {update_data.parent_id} would create a cycle" # noqa
+                )
+
+            update_values["parent_id"] = update_data.parent_id
+
+        if "name" in update_values or "parent_id" in update_values:
+            check_parent_id = update_values.get(
+                "parent_id",
+                existing_department.parent_id
+            )
+            check_name = update_values.get("name", existing_department.name)
+
+            siblings = await (
+                self.repository.get_department_by_parent(check_parent_id)
+            )
+            for sibling in siblings:
+                if sibling.id != department_id and sibling.name == check_name:
+                    raise ValueError(
+                        f"Department with name '{check_name}' already exists under this parent"  # noqa
+                    )
+
+        try:
+            updated_department = await self.repository.update_department(
+                department_id,
+                update_values
+            )
+            logging.info(
+                f"Department {department_id} updated with: {update_values}"
+            )
+            return updated_department
+        except Exception as e:
+            logging.error(f"Failed to update department {department_id}: {e}")
+            raise

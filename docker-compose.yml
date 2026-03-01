@@ -13,6 +13,16 @@ services:
     networks:
       - task-network
 
+  alembic:
+    build: .
+    container_name: test-task-migrations
+    depends_on:
+      - test-database
+    env_file: ./.env
+    networks:
+      - task-network
+    command: alembic upgrade head
+
   app:
     build:
       dockerfile: Dockerfile
@@ -21,11 +31,9 @@ services:
       - "8000:8000"
     depends_on:
       - test-database
-    env_file: ./env
+    env_file: ./.env
     networks:
       - task-network
-    command: > 
-      sh -c "alembic upgrade head"
 
 volumes:
   test_db_data:

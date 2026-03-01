@@ -1,21 +1,21 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from datetime import datetime
 from enum import Enum
 from app.schemas.employee import EmployeeResponse
 
 
 class DepartmentBase(BaseModel):
-    name: str
+    name: str = Field(min_length=1, max_length=200)
     parent_id: int | None
 
 
 class DepartmentCreate(BaseModel):
-    name: str
+    name: str = Field(min_length=1, max_length=200)
     parent_id: int | None = None
 
 
 class DepartmentUpdate(BaseModel):
-    name: str | None = None
+    name: str | None = Field(min_length=1, max_length=200)
     parent_id: int | None = None
 
     model_config = ConfigDict(from_attributes=True)

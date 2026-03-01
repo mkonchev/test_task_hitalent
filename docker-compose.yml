@@ -31,6 +31,8 @@ services:
       - DB_PASSWORD=1111
     networks:
       - task-network
+    command: > 
+      sh -c "alembic upgrade head"
 
 volumes:
   test_db_data:
